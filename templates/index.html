@@ -2,76 +2,144 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d17">
   <title>fileShare</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <header>
-    <h1>fileShare</h1>
-    <a class="logout" href="{{ url_for('logout') }}">Log out</a>
+  <!-- soft animated glass background -->
+  <div class="bg">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+  </div>
+
+  <!-- top bar -->
+  <header class="topbar glass">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <h1>fileShare</h1>
+    </div>
+    <a class="icon-btn" href="{{ url_for('logout') }}" title="Log out" aria-label="Log out">⏻</a>
   </header>
 
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}<div class="flash glass" id="flash">{{ messages[0] }}</div>{% endif %}
+  {% endwith %}
+
   <main>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="flash">{{ messages[0] }}</div>
-      {% endif %}
-    {% endwith %}
+    <!-- ============ DASHBOARD ============ -->
+    <section class="view" id="view-home">
+      <div class="card glass storage-card">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+            <circle class="ring-fg" cx="60" cy="60" r="52"
+                    style="--pct: {{ stats.percent_used }}"></circle>
+          </svg>
+          <div class="ring-label">
+            <strong>{{ stats.percent_used }}%</strong>
+            <small>used</small>
+          </div>
+        </div>
+        <div class="storage-meta">
+          <h2>Storage</h2>
+          <p class="muted">{{ stats.disk_used_human }} of {{ stats.disk_total_human }} used</p>
+          <p class="free">{{ stats.disk_free_human }} free</p>
+          <p class="muted small">{{ stats.total_files }} files · {{ stats.files_human }} in this folder</p>
+        </div>
+      </div>
 
-    <form class="card uploader" method="post" action="{{ url_for('upload') }}"
-          enctype="multipart/form-data">
-      <label class="drop" for="fileInput">
-        <span>Click to choose files</span>
-        <small>or drop them here · max {{ max_gb }} GB each</small>
-      </label>
-      <input id="fileInput" type="file" name="files" multiple hidden>
-      <button type="submit">Upload</button>
-    </form>
+      <div class="stat-grid">
+        <div class="card glass stat" data-jump="image">
+          <span class="stat-ico">🖼️</span>
+          <strong>{{ stats.counts.image }}</strong><span class="muted">Images</span>
+        </div>
+        <div class="card glass stat" data-jump="video">
+          <span class="stat-ico">🎬</span>
+          <strong>{{ stats.counts.video }}</strong><span class="muted">Videos</span>
+        </div>
+        <div class="card glass stat" data-jump="audio">
+          <span class="stat-ico">🎵</span>
+          <strong>{{ stats.counts.audio }}</strong><span class="muted">Audio</span>
+        </div>
+        <div class="card glass stat" data-jump="document">
+          <span class="stat-ico">📄</span>
+          <strong>{{ stats.counts.document }}</strong><span class="muted">Docs</span>
+        </div>
+      </div>
+    </section>
 
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Name</th><th>Size</th><th>Modified</th><th></th></tr>
-        </thead>
-        <tbody>
-          {% for f in files %}
-          <tr>
-            <td><a href="{{ url_for('download', filename=f.name) }}">{{ f.name }}</a></td>
-            <td>{{ f.size }}</td>
-            <td>{{ f.modified }}</td>
-            <td>
-              <form method="post" action="{{ url_for('delete', filename=f.name) }}"
-                    onsubmit="return confirm('Delete {{ f.name }}?');">
-                <button class="danger" type="submit">Delete</button>
-              </form>
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="4" class="empty">No files yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <!-- ============ UPLOAD ============ -->
+    <section class="view" id="view-upload" hidden>
+      <h2 class="view-title">Upload</h2>
+
+      <!-- Instagram-style glass slider toggle -->
+      <div class="segmented glass" id="upToggle" data-count="4">
+        <span class="seg-pill"></span>
+        <button class="seg active" data-accept="image/*">Images</button>
+        <button class="seg" data-accept="video/*">Videos</button>
+        <button class="seg" data-accept="audio/*">Audio</button>
+        <button class="seg" data-accept="*/*">Docs</button>
+      </div>
+
+      <form class="card glass uploader" id="uploadForm"
+            method="post" action="{{ url_for('upload') }}" enctype="multipart/form-data">
+        <label class="drop" id="drop" for="fileInput">
+          <span class="drop-ico">⬆</span>
+          <span id="dropText">Tap to choose files</span>
+          <small class="muted">or drop them here · max {{ max_gb }} GB each</small>
+        </label>
+        <input id="fileInput" type="file" name="files" accept="image/*" multiple hidden>
+
+        <div class="progress" id="progress" hidden><span id="bar"></span></div>
+        <button type="submit" id="uploadBtn">Upload</button>
+      </form>
+    </section>
+
+    <!-- ============ FILES ============ -->
+    <section class="view" id="view-files" hidden>
+      <h2 class="view-title">Files</h2>
+
+      <!-- category slider toggle -->
+      <div class="segmented glass" id="catToggle" data-count="4">
+        <span class="seg-pill"></span>
+        <button class="seg active" data-cat="image">Images</button>
+        <button class="seg" data-cat="video">Videos</button>
+        <button class="seg" data-cat="audio">Audio</button>
+        <button class="seg" data-cat="document">Docs</button>
+      </div>
+
+      <!-- extension filter chips (rebuilt per category by JS) -->
+      <div class="chips" id="extChips"></div>
+
+      <div id="fileArea"></div>
+    </section>
   </main>
 
-  <script>
-    const input = document.getElementById('fileInput');
-    const drop = document.querySelector('.drop');
-    const label = drop.querySelector('span');
-    input.addEventListener('change', () => {
-      label.textContent = input.files.length
-        ? input.files.length + ' file(s) selected'
-        : 'Click to choose files';
-    });
-    ['dragover', 'dragenter'].forEach(e =>
-      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
-    ['dragleave', 'drop'].forEach(e =>
-      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
-    drop.addEventListener('drop', ev => {
-      input.files = ev.dataTransfer.files;
-      input.dispatchEvent(new Event('change'));
-    });
-  </script>
+  <!-- ============ BOTTOM GLASS NAV ============ -->
+  <nav class="bottomnav glass" id="nav" data-count="3">
+    <span class="nav-pill"></span>
+    <button class="navbtn active" data-view="home">
+      <span class="nav-ico">▦</span><span>Home</span>
+    </button>
+    <button class="navbtn" data-view="upload">
+      <span class="nav-ico">⬆</span><span>Upload</span>
+    </button>
+    <button class="navbtn" data-view="files">
+      <span class="nav-ico">◳</span><span>Files</span>
+    </button>
+  </nav>
+
+  <!-- image lightbox -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lb-close" id="lbClose">✕</button>
+    <img id="lbImg" alt="">
+  </div>
+
+  <!-- file data handed to the client for instant filtering -->
+  <script id="fileData" type="application/json">{{ files | tojson }}</script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

@@ -2,20 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d17">
   <title>fileShare — Login</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="centered">
-  <form class="card login" method="post">
+  <div class="bg">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+  </div>
+
+  <form class="card glass login" method="post">
+    <div class="login-logo">◈</div>
     <h1>fileShare</h1>
+    <p class="muted">Your private cloud</p>
     {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="flash">{{ messages[0] }}</div>
-      {% endif %}
+      {% if messages %}<div class="flash glass">{{ messages[0] }}</div>{% endif %}
     {% endwith %}
     <input type="password" name="password" placeholder="Password" autofocus required>
-    <button type="submit">Log in</button>
+    <button type="submit">Unlock</button>
   </form>
 </body>
 </html>
