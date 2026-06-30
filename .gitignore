@@ -1,0 +1,9 @@
+# Runtime data — never commit your files or secrets
+storage/
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

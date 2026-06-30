@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fileShare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>fileShare</h1>
+    <a class="logout" href="{{ url_for('logout') }}">Log out</a>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
+    <form class="card uploader" method="post" action="{{ url_for('upload') }}"
+          enctype="multipart/form-data">
+      <label class="drop" for="fileInput">
+        <span>Click to choose files</span>
+        <small>or drop them here · max {{ max_gb }} GB each</small>
+      </label>
+      <input id="fileInput" type="file" name="files" multiple hidden>
+      <button type="submit">Upload</button>
+    </form>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Size</th><th>Modified</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for f in files %}
+          <tr>
+            <td><a href="{{ url_for('download', filename=f.name) }}">{{ f.name }}</a></td>
+            <td>{{ f.size }}</td>
+            <td>{{ f.modified }}</td>
+            <td>
+              <form method="post" action="{{ url_for('delete', filename=f.name) }}"
+                    onsubmit="return confirm('Delete {{ f.name }}?');">
+                <button class="danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">No files yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const input = document.getElementById('fileInput');
+    const drop = document.querySelector('.drop');
+    const label = drop.querySelector('span');
+    input.addEventListener('change', () => {
+      label.textContent = input.files.length
+        ? input.files.length + ' file(s) selected'
+        : 'Click to choose files';
+    });
+    ['dragover', 'dragenter'].forEach(e =>
+      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(e =>
+      drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+    drop.addEventListener('drop', ev => {
+      input.files = ev.dataTransfer.files;
+      input.dispatchEvent(new Event('change'));
+    });
+  </script>
+</body>
+</html>

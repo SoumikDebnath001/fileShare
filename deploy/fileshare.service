@@ -1,0 +1,29 @@
+# systemd unit — keeps fileShare running and restarts it on boot/crash.
+#
+# Install on the Pi:
+#   sudo cp deploy/fileshare.service /etc/systemd/system/fileshare.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now fileshare
+#
+# Check status / logs:
+#   systemctl status fileshare
+#   journalctl -u fileshare -f
+#
+# Adjust User and the paths below if you did not clone to /home/pi/fileShare.
+
+[Unit]
+Description=fileShare self-hosted file storage
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/fileShare
+EnvironmentFile=/home/pi/fileShare/.env
+ExecStart=/home/pi/fileShare/.venv/bin/python app.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
