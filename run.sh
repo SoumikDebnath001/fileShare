@@ -35,9 +35,19 @@ if ! "$PY" -c "import flask, waitress" >/dev/null 2>&1; then
   "$VENV/bin/pip" install -q -r requirements.txt
 fi
 
-# 4. Sensible local defaults (override by exporting before running).
-export FILESHARE_PASSWORD="${FILESHARE_PASSWORD:-test}"
-export FILESHARE_PORT="${PORT:-8000}"
+# 4. Password: app.py reads .env itself. Only fall back to "test" if no
+#    password is configured anywhere (env var or .env file).
+if [ -z "${FILESHARE_PASSWORD:-}" ] && ! grep -q '^[[:space:]]*FILESHARE_PASSWORD=' .env 2>/dev/null; then
+  export FILESHARE_PASSWORD="test"
+  PASS_NOTE="test"
+else
+  PASS_NOTE="the one in your .env"
+fi
+
+# Port: CLI PORT wins, else .env value, else 8000.
+ENV_PORT="$(grep -E '^[[:space:]]*FILESHARE_PORT=' .env 2>/dev/null | tail -1 | cut -d= -f2 | tr -d '[:space:]')"
+export FILESHARE_PORT="${PORT:-${ENV_PORT:-8000}}"
+
 if [ "${PHONE:-0}" = "1" ]; then
   export FILESHARE_HOST="0.0.0.0"
   IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
@@ -46,6 +56,6 @@ else
   export FILESHARE_HOST="${FILESHARE_HOST:-127.0.0.1}"
 fi
 
-echo "→ Open http://127.0.0.1:${FILESHARE_PORT}   (password: ${FILESHARE_PASSWORD})"
+echo "→ Open http://127.0.0.1:${FILESHARE_PORT}   (password: ${PASS_NOTE})"
 echo "→ Press Ctrl+C to stop."
 exec "$PY" app.py

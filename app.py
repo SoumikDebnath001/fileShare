@@ -44,6 +44,31 @@ from werkzeug.utils import secure_filename
 # --------------------------------------------------------------------------- #
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+def load_env(path):
+    """Load KEY=VALUE pairs from a .env file into the environment.
+
+    Tiny, dependency-free version of python-dotenv. Values already set in the
+    real environment (e.g. by systemd on the Pi) take precedence and are not
+    overwritten, so this is safe everywhere.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key, val = key.strip(), val.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, val)
+
+
+load_env(os.path.join(BASE_DIR, ".env"))
+
 PASSWORD = os.environ.get("FILESHARE_PASSWORD", "changeme")
 SECRET_KEY = os.environ.get("FILESHARE_SECRET") or secrets.token_hex(32)
 STORAGE_DIR = os.environ.get(
@@ -53,7 +78,14 @@ HOST = os.environ.get("FILESHARE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("FILESHARE_PORT", "8000"))
 MAX_GB = float(os.environ.get("FILESHARE_MAX_GB", "8"))
 
-os.makedirs(STORAGE_DIR, exist_ok=True)
+try:
+    os.makedirs(STORAGE_DIR, exist_ok=True)
+except OSError:
+    # Configured path isn't usable here (e.g. a Pi path on a dev laptop).
+    # Fall back to a local ./storage so the app still starts.
+    STORAGE_DIR = os.path.join(BASE_DIR, "storage")
+    os.makedirs(STORAGE_DIR, exist_ok=True)
+    print(f"WARNING: could not use configured storage; using {STORAGE_DIR}")
 
 # Where we keep download counts. A hidden sidecar inside STORAGE_DIR so it
 # travels with the files (e.g. on a USB drive) but is never shown in listings.

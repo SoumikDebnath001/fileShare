@@ -21,6 +21,11 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* Elements with a `display` rule (e.g. .lightbox, .view) would otherwise
+   ignore the `hidden` attribute and stay on screen as an invisible overlay
+   that blocks taps/scroll. Force hidden to always win. */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {
